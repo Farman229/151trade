@@ -1,15 +1,31 @@
 // API URL based on environment
 const API_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:3001' 
-    : 'https://indian-stock-prediction.onrender.com';
+    : 'https://mocktrade.onrender.com';
 
 // Stock data and update interval
 let stocksData = [];
 const UPDATE_INTERVAL = 60000; // 1 minute
 
-// Add authentication state
+// Auth token and user info
 let authToken = localStorage.getItem('authToken');
 let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+// Update UI based on auth state
+function updateAuthUI() {
+    if (authToken && currentUser) {
+        document.getElementById('loginBtn').style.display = 'none';
+        document.getElementById('signupBtn').style.display = 'none';
+        document.getElementById('logoutBtn').style.display = 'block';
+    } else {
+        document.getElementById('loginBtn').style.display = 'block';
+        document.getElementById('signupBtn').style.display = 'block';
+        document.getElementById('logoutBtn').style.display = 'none';
+    }
+}
+
+// Initialize auth state
+updateAuthUI();
 
 // Initialize the page
 document.addEventListener('DOMContentLoaded', () => {
@@ -23,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setupPriceAlerts();
     } else {
         document.getElementById('stockGrid').innerHTML = 
-            '<div class="message">Please login to view stock data</div>';
+            '<div class="message">Please log in to view stock data</div>';
     }
     // Auto-refresh data every minute
     setInterval(fetchStockData, UPDATE_INTERVAL);
@@ -43,13 +59,6 @@ function initializeAuth() {
     const loginModal = document.getElementById('loginModal');
     const signupModal = document.getElementById('signupModal');
     const closeBtns = document.getElementsByClassName('close');
-
-    // Update UI based on auth state
-    if (currentUser) {
-        loginBtn.style.display = 'none';
-        signupBtn.style.display = 'none';
-        logoutBtn.style.display = 'block';
-    }
 
     // Event listeners for buttons
     loginBtn.onclick = () => loginModal.style.display = 'block';
@@ -89,30 +98,30 @@ async function handleLogin(e) {
         });
 
         const data = await response.json();
-        if (response.ok) {
-            authToken = data.token;
-            currentUser = { name: data.name, email: data.email };
-            localStorage.setItem('authToken', authToken);
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            
-            // Update UI
-            document.getElementById('loginModal').style.display = 'none';
-            document.getElementById('loginBtn').style.display = 'none';
-            document.getElementById('signupBtn').style.display = 'none';
-            document.getElementById('logoutBtn').style.display = 'block';
-            
-            // Fetch data
-            fetchStockData();
-            initializeMarketChart();
-            initializeSensexChart();
-            initializeSearchBar();
-            setupPriceAlerts();
-        } else {
-            alert(data.error || 'Login failed');
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Login failed');
         }
+
+        authToken = data.token;
+        currentUser = { name: data.name, email: data.email };
+        localStorage.setItem('authToken', authToken);
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        
+        // Update UI
+        document.getElementById('loginModal').style.display = 'none';
+        updateAuthUI();
+        
+        // Clear form
+        document.getElementById('loginForm').reset();
+        
+        // Fetch data
+        await fetchStockData();
+        await initializeMarketChart();
+        await initializeSensexChart();
     } catch (error) {
         console.error('Login error:', error);
-        alert('Login failed. Please try again.');
+        alert(error.message || 'Login failed. Please try again.');
     }
 }
 
@@ -131,30 +140,30 @@ async function handleSignup(e) {
         });
 
         const data = await response.json();
-        if (response.ok) {
-            authToken = data.token;
-            currentUser = { name: data.name, email: data.email };
-            localStorage.setItem('authToken', authToken);
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            
-            // Update UI
-            document.getElementById('signupModal').style.display = 'none';
-            document.getElementById('loginBtn').style.display = 'none';
-            document.getElementById('signupBtn').style.display = 'none';
-            document.getElementById('logoutBtn').style.display = 'block';
-            
-            // Fetch data
-            fetchStockData();
-            initializeMarketChart();
-            initializeSensexChart();
-            initializeSearchBar();
-            setupPriceAlerts();
-        } else {
-            alert(data.error || 'Signup failed');
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Signup failed');
         }
+
+        authToken = data.token;
+        currentUser = { name: data.name, email: data.email };
+        localStorage.setItem('authToken', authToken);
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        
+        // Update UI
+        document.getElementById('signupModal').style.display = 'none';
+        updateAuthUI();
+        
+        // Clear form
+        document.getElementById('signupForm').reset();
+        
+        // Fetch data
+        await fetchStockData();
+        await initializeMarketChart();
+        await initializeSensexChart();
     } catch (error) {
         console.error('Signup error:', error);
-        alert('Signup failed. Please try again.');
+        alert(error.message || 'Signup failed. Please try again.');
     }
 }
 
@@ -164,13 +173,11 @@ function handleLogout() {
     currentUser = null;
     localStorage.removeItem('authToken');
     localStorage.removeItem('currentUser');
-    
-    // Update UI
-    document.getElementById('loginBtn').style.display = 'block';
-    document.getElementById('signupBtn').style.display = 'block';
-    document.getElementById('logoutBtn').style.display = 'none';
+    updateAuthUI();
     document.getElementById('stockGrid').innerHTML = 
-        '<div class="message">Please login to view stock data</div>';
+        '<div class="message">Please log in to view stock data</div>';
+    document.getElementById('marketChart').innerHTML = '';
+    document.getElementById('sensexChart').innerHTML = '';
 }
 
 // Fetch real-time stock data from our backend

@@ -11,9 +11,11 @@ const PORT = process.env.PORT || 3001;
 // Configure CORS for production
 const corsOptions = {
     origin: process.env.NODE_ENV === 'production' 
-        ? ['https://indian-stock-prediction.onrender.com', 'https://www.indian-stock-prediction.onrender.com']
+        ? ['https://mocktrade.onrender.com']
         : 'http://localhost:3001',
-    optionsSuccessStatus: 200
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 };
 
 app.use(cors(corsOptions));
@@ -44,10 +46,16 @@ const authenticateToken = (req, res, next) => {
     }
 };
 
+// Test endpoint
+app.get('/api/test', (req, res) => {
+    res.json({ message: 'Server is running!' });
+});
+
 // Signup endpoint
 app.post('/api/signup', async (req, res) => {
     try {
         const { name, email, password } = req.body;
+        console.log('Signup attempt:', { name, email }); // Debug log
 
         // Validate input
         if (!name || !email || !password) {
@@ -70,12 +78,14 @@ app.post('/api/signup', async (req, res) => {
             password: hashedPassword
         });
 
+        console.log('User created:', email); // Debug log
+
         // Create and send token
         const token = jwt.sign({ email }, JWT_SECRET);
         res.json({ token, name, email });
     } catch (error) {
         console.error('Error in signup:', error);
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Server error during signup' });
     }
 });
 
@@ -83,6 +93,7 @@ app.post('/api/signup', async (req, res) => {
 app.post('/api/login', async (req, res) => {
     try {
         const { email, password } = req.body;
+        console.log('Login attempt:', email); // Debug log
 
         // Validate input
         if (!email || !password) {
@@ -101,12 +112,14 @@ app.post('/api/login', async (req, res) => {
             return res.status(400).json({ error: 'Invalid password' });
         }
 
+        console.log('Login successful:', email); // Debug log
+
         // Create and send token
         const token = jwt.sign({ email }, JWT_SECRET);
         res.json({ token, name: user.name, email });
     } catch (error) {
         console.error('Error in login:', error);
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Server error during login' });
     }
 });
 
@@ -199,57 +212,72 @@ let marketCache = {
 
 // API endpoint to get stock data
 app.get('/api/stocks', authenticateToken, (req, res) => {
-    const now = Date.now();
-    
-    // Update cache every minute
-    if (!stocksCache.data || !stocksCache.lastUpdated || (now - stocksCache.lastUpdated) > 60000) {
-        stocksCache.data = generateMockData();
-        stocksCache.lastUpdated = now;
+    try {
+        const now = Date.now();
+        
+        // Update cache every minute
+        if (!stocksCache.data || !stocksCache.lastUpdated || (now - stocksCache.lastUpdated) > 60000) {
+            stocksCache.data = generateMockData();
+            stocksCache.lastUpdated = now;
+        }
+        
+        res.json(stocksCache.data);
+    } catch (error) {
+        console.error('Error fetching stock data:', error);
+        res.status(500).json({ error: 'Failed to fetch stock data' });
     }
-    
-    res.json(stocksCache.data);
 });
 
 // API endpoint to get NIFTY 50 data
 app.get('/api/nifty50', authenticateToken, (req, res) => {
-    const now = Date.now();
-    
-    // Update cache every 5 minutes
-    if (!marketCache.nifty || !marketCache.lastUpdated || (now - marketCache.lastUpdated) > 300000) {
-        const data = generateMarketData();
-        marketCache.nifty = {
-            timestamps: data.timestamps,
-            prices: data.prices.map(p => p)
-        };
-        marketCache.sensex = {
-            timestamps: data.timestamps,
-            prices: data.prices.map(p => p * 3.3) // Approximate SENSEX/NIFTY ratio
-        };
-        marketCache.lastUpdated = now;
+    try {
+        const now = Date.now();
+        
+        // Update cache every 5 minutes
+        if (!marketCache.nifty || !marketCache.lastUpdated || (now - marketCache.lastUpdated) > 300000) {
+            const data = generateMarketData();
+            marketCache.nifty = {
+                timestamps: data.timestamps,
+                prices: data.prices.map(p => p)
+            };
+            marketCache.sensex = {
+                timestamps: data.timestamps,
+                prices: data.prices.map(p => p * 3.3) // Approximate SENSEX/NIFTY ratio
+            };
+            marketCache.lastUpdated = now;
+        }
+        
+        res.json(marketCache.nifty);
+    } catch (error) {
+        console.error('Error fetching NIFTY data:', error);
+        res.status(500).json({ error: 'Failed to fetch NIFTY data' });
     }
-    
-    res.json(marketCache.nifty);
 });
 
 // API endpoint to get SENSEX data
 app.get('/api/sensex', authenticateToken, (req, res) => {
-    const now = Date.now();
-    
-    // Update cache every 5 minutes
-    if (!marketCache.sensex || !marketCache.lastUpdated || (now - marketCache.lastUpdated) > 300000) {
-        const data = generateMarketData();
-        marketCache.nifty = {
-            timestamps: data.timestamps,
-            prices: data.prices.map(p => p)
-        };
-        marketCache.sensex = {
-            timestamps: data.timestamps,
-            prices: data.prices.map(p => p * 3.3)
-        };
-        marketCache.lastUpdated = now;
+    try {
+        const now = Date.now();
+        
+        // Update cache every 5 minutes
+        if (!marketCache.sensex || !marketCache.lastUpdated || (now - marketCache.lastUpdated) > 300000) {
+            const data = generateMarketData();
+            marketCache.nifty = {
+                timestamps: data.timestamps,
+                prices: data.prices.map(p => p)
+            };
+            marketCache.sensex = {
+                timestamps: data.timestamps,
+                prices: data.prices.map(p => p * 3.3)
+            };
+            marketCache.lastUpdated = now;
+        }
+        
+        res.json(marketCache.sensex);
+    } catch (error) {
+        console.error('Error fetching SENSEX data:', error);
+        res.status(500).json({ error: 'Failed to fetch SENSEX data' });
     }
-    
-    res.json(marketCache.sensex);
 });
 
 app.listen(PORT, () => {
