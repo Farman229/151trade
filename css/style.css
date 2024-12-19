@@ -309,6 +309,110 @@ main {
     background: #c0392b;
 }
 
+/* Price Alerts Section */
+.alerts-section {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin: 20px 0;
+}
+
+.alerts-section h2 {
+    color: #333;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+}
+
+.alerts-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.alerts-form input,
+.alerts-form select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.alerts-form input[type="number"] {
+    width: 120px;
+}
+
+.alerts-form select {
+    width: 100px;
+}
+
+.active-alerts {
+    display: grid;
+    gap: 10px;
+}
+
+.alert-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border-left: 4px solid #007bff;
+}
+
+.alert-item.triggered {
+    border-left-color: #28a745;
+    background: #e8f5e9;
+}
+
+.alert-info {
+    flex: 1;
+}
+
+.alert-symbol {
+    font-weight: bold;
+    color: #333;
+}
+
+.alert-price {
+    color: #666;
+    margin-left: 10px;
+}
+
+.alert-type {
+    color: #007bff;
+    font-size: 0.9em;
+}
+
+.delete-alert {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.delete-alert:hover {
+    background: #c82333;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .alerts-form {
+        flex-direction: column;
+    }
+    
+    .alerts-form input,
+    .alerts-form select,
+    .alerts-form button {
+        width: 100%;
+    }
+}
+
 /* Market Overview */
 .market-overview {
     display: grid;

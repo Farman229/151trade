@@ -195,6 +195,7 @@ async function fetchStockData() {
         if (Array.isArray(data) && data.length > 0) {
             stocksData = data;
             renderStockCards(stocksData);
+            updateStockData(data);
         } else {
             throw new Error('Invalid data format received');
         }
@@ -410,49 +411,137 @@ function setupPriceAlerts() {
         <div class="alert-form">
             <input type="text" id="alertSymbol" placeholder="Stock Symbol">
             <input type="number" id="alertPrice" placeholder="Target Price">
-            <select id="alertCondition">
+            <select id="alertType">
                 <option value="above">Above</option>
                 <option value="below">Below</option>
             </select>
-            <button onclick="addPriceAlert()">Add Alert</button>
+            <button onclick="addAlert()">Add Alert</button>
         </div>
         <div id="activeAlerts"></div>
     `;
     document.body.appendChild(alertsDiv);
 }
 
-// Add price alert
-window.addPriceAlert = function() {
-    const symbol = document.getElementById('alertSymbol').value;
+// Price Alerts Management
+let priceAlerts = JSON.parse(localStorage.getItem('priceAlerts') || '[]');
+
+function addAlert() {
+    const symbol = document.getElementById('alertSymbol').value.toUpperCase();
     const price = parseFloat(document.getElementById('alertPrice').value);
-    const condition = document.getElementById('alertCondition').value;
-    
-    if (!symbol || !price) return;
-    
-    const alertsDiv = document.getElementById('activeAlerts');
-    const alertElement = document.createElement('div');
-    alertElement.className = 'alert-item';
-    alertElement.innerHTML = `
-        ${symbol} ${condition} ₹${price.toFixed(2)}
-        <button onclick="this.parentElement.remove()">Remove</button>
-    `;
-    alertsDiv.appendChild(alertElement);
-    
-    // Check alert condition every minute
-    setInterval(() => {
-        const stock = stocksData.find(s => s.symbol === symbol);
-        if (stock) {
-            const triggered = condition === 'above' ? 
-                stock.price >= price : 
-                stock.price <= price;
-            
-            if (triggered) {
-                alert(`${symbol} is ${condition} ₹${price.toFixed(2)}! Current price: ₹${stock.price.toFixed(2)}`);
-                alertElement.remove();
-            }
+    const type = document.getElementById('alertType').value;
+
+    if (!symbol || !price) {
+        alert('Please fill in all fields');
+        return;
+    }
+
+    // Validate symbol
+    const validSymbols = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'HINDUNILVR', 
+                         'ICICIBANK', 'SBIN', 'BHARTIARTL', 'WIPRO', 'LT'];
+    if (!validSymbols.includes(symbol)) {
+        alert('Please enter a valid stock symbol');
+        return;
+    }
+
+    // Add new alert
+    const alert = {
+        id: Date.now(),
+        symbol,
+        price,
+        type,
+        triggered: false
+    };
+
+    priceAlerts.push(alert);
+    localStorage.setItem('priceAlerts', JSON.stringify(priceAlerts));
+    renderAlerts();
+    checkAlerts(stocksData);
+
+    // Clear form
+    document.getElementById('alertSymbol').value = '';
+    document.getElementById('alertPrice').value = '';
+}
+
+function deleteAlert(id) {
+    priceAlerts = priceAlerts.filter(alert => alert.id !== id);
+    localStorage.setItem('priceAlerts', JSON.stringify(priceAlerts));
+    renderAlerts();
+}
+
+function renderAlerts() {
+    const alertsContainer = document.getElementById('activeAlerts');
+    alertsContainer.innerHTML = priceAlerts.map(alert => `
+        <div class="alert-item ${alert.triggered ? 'triggered' : ''}">
+            <div class="alert-info">
+                <span class="alert-symbol">${alert.symbol}</span>
+                <span class="alert-price">₹${alert.price}</span>
+                <span class="alert-type">${alert.type === 'above' ? '↑' : '↓'} ${alert.type}</span>
+            </div>
+            <button class="delete-alert" onclick="deleteAlert(${alert.id})">Delete</button>
+        </div>
+    `).join('');
+}
+
+function checkAlerts(stocks) {
+    if (!stocks || !Array.isArray(stocks)) return;
+
+    let alertTriggered = false;
+    priceAlerts.forEach(alert => {
+        const stock = stocks.find(s => s.symbol === alert.symbol);
+        if (!stock) return;
+
+        const currentPrice = stock.price;
+        const wasTriggered = alert.triggered;
+
+        if (alert.type === 'above' && currentPrice > alert.price) {
+            alert.triggered = true;
+        } else if (alert.type === 'below' && currentPrice < alert.price) {
+            alert.triggered = true;
         }
-    }, UPDATE_INTERVAL);
-};
+
+        if (alert.triggered && !wasTriggered) {
+            alertTriggered = true;
+            showNotification(
+                `Price Alert: ${alert.symbol}`,
+                `Price ${alert.type === 'above' ? 'exceeded' : 'fell below'} ₹${alert.price}`
+            );
+        }
+    });
+
+    if (alertTriggered) {
+        localStorage.setItem('priceAlerts', JSON.stringify(priceAlerts));
+        renderAlerts();
+    }
+}
+
+function showNotification(title, message) {
+    if (!("Notification" in window)) return;
+
+    if (Notification.permission === "granted") {
+        new Notification(title, { body: message });
+    } else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                new Notification(title, { body: message });
+            }
+        });
+    }
+}
+
+// Initialize alerts on page load
+document.addEventListener('DOMContentLoaded', () => {
+    renderAlerts();
+    if ("Notification" in window) {
+        Notification.requestPermission();
+    }
+});
+
+// Check alerts when new stock data arrives
+function updateStockData(data) {
+    stocksData = data;
+    renderStockCards(data);
+    checkAlerts(data);
+}
 
 // Initialize search functionality
 function initializeSearchBar() {

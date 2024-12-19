@@ -28,13 +28,38 @@
         </header>
 
         <div class="market-overview">
-            <div class="chart-container">
-                <h2>NIFTY 50</h2>
+            <div class="charts-container">
                 <canvas id="marketChart"></canvas>
-            </div>
-            <div class="chart-container">
-                <h2>BSE SENSEX</h2>
                 <canvas id="sensexChart"></canvas>
+            </div>
+            
+            <!-- Price Alerts Section -->
+            <div class="alerts-section">
+                <h2>Price Alerts</h2>
+                <div class="alerts-form">
+                    <input type="text" id="alertSymbol" placeholder="Stock Symbol" list="stockSymbols">
+                    <datalist id="stockSymbols">
+                        <option value="RELIANCE">
+                        <option value="TCS">
+                        <option value="HDFCBANK">
+                        <option value="INFY">
+                        <option value="HINDUNILVR">
+                        <option value="ICICIBANK">
+                        <option value="SBIN">
+                        <option value="BHARTIARTL">
+                        <option value="WIPRO">
+                        <option value="LT">
+                    </datalist>
+                    <input type="number" id="alertPrice" placeholder="Target Price" step="0.01">
+                    <select id="alertType">
+                        <option value="above">Above</option>
+                        <option value="below">Below</option>
+                    </select>
+                    <button onclick="addAlert()" class="btn-primary">Add Alert</button>
+                </div>
+                <div id="activeAlerts" class="active-alerts">
+                    <!-- Active alerts will be displayed here -->
+                </div>
             </div>
         </div>
 
